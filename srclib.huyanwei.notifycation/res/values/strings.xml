@@ -1,0 +1,12 @@
+<resources>
+
+    <string name="app_name">notifycation</string>
+    <string name="menu_settings">Settings</string>
+    <string name="title_activity_notifycation">Notifycation</string>
+	<string name="make_notification">generate notification</string>
+    <string name="clear_notification">clear notification</string>
+    <string name="notification_remote_view">set notification remote view data</string>      
+    <string name="notification_brief">You have a new notify ~~~</string>  
+    <string name="notification_title">srclib.huyanwei.notify</string>
+    <string name="notification_context">Warning!Warning!Warning!</string>    
+</resources>
