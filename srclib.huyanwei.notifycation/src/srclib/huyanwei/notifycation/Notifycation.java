@@ -24,6 +24,7 @@ public class Notifycation extends Activity {
 	
 	private Button btn_gen ; 
 	private Button btn_clear ;	
+	private Button btn_update ;	
 	
 	private final int NOTIFY_ID = 1;
 	
@@ -42,6 +43,8 @@ public class Notifycation extends Activity {
 	private RemoteViews mRemoteViews ;
 	
 	private int process_bar_value = 0 ;
+	
+	private boolean debug = false;
 		
 	private View.OnClickListener btn_OnClickListener = new View.OnClickListener() 
 	{
@@ -50,6 +53,7 @@ public class Notifycation extends Activity {
 			{
 				case R.id.notify_button_gen:
 					generate_notification();
+					update_remote_view();
 					break;
 				case R.id.notify_button_clear:
 					clear_notification();
@@ -67,15 +71,16 @@ public class Notifycation extends Activity {
         @Override
         public void handleMessage(Message msg) {
             // TODO Auto-generated method stub        
-        	Log.d(TAG,"huyanwei receive msg.arg1="+msg.arg1);
+        	if(debug) 
+        		Log.d(TAG,"huyanwei receive msg.arg1="+msg.arg1);
         	mNotification.contentView.setProgressBar(R.id.progressBar1, 100, msg.arg1,
-                    true);
+                    false);
         	mNotificationManager.notify(NOTIFY_ID, mNotification);
-
-            if (msg.arg1 == 100) {
-            	process_bar_value = 0;
+        	/*	
+            if (msg.arg1 >= 100) {
             	mNotificationManager.cancel(NOTIFY_ID); // 完成后消失.
             }
+            */
             super.handleMessage(msg);
         }
     };
@@ -103,10 +108,12 @@ public class Notifycation extends Activity {
 		
 		mNotification.tickerText = this.getString(R.string.notification_brief);
 		
+		/*
 		mNotification.defaults =  Notification.DEFAULT_SOUND 		    //通知时默认的声音     
 								| Notification.DEFAULT_VIBRATE 			//通知时震动
 								| Notification.DEFAULT_LIGHTS;          //通知时亮屏
-	
+		*/
+		
 		//mNotification.flags		|= 	Notification.FLAG_ONLY_ALERT_ONCE;		
 		//mNotification.flags 	|= 	Notification.FLAG_INSISTENT ;    	//通知的音乐效果一直播放
 		
@@ -124,7 +131,7 @@ public class Notifycation extends Activity {
         if(m_allow_remoteview)
         {
         	mRemoteViews = new RemoteViews(this.getApplication().getPackageName(), R.layout.notification_remote_views);
-        	mRemoteViews.setProgressBar(R.id.progressBar1, 100, 60, false);
+        	mRemoteViews.setProgressBar(R.id.progressBar1, 100, 0, false);
         	mNotification.contentView = mRemoteViews;        	
         	mNotification.contentIntent = mPendingClickIntent;
         }
@@ -148,19 +155,24 @@ public class Notifycation extends Activity {
 	
 	private void update_remote_view()
 	{
+		// valid object check.
+		if (mNotification == null )
+			return ;
+		
 		Thread mThread = new Thread(new Runnable() {
             public void run() {   
             	process_bar_value = 0 ;
                 while (true) {
-                	process_bar_value += 5;
+                	process_bar_value += 1;
                     Message msg = mHandler.obtainMessage();
                     msg.arg1 = process_bar_value;
                     msg.sendToTarget();
-
-                    if(process_bar_value > 100)
+                    
+                    if(debug) 
+                    	Log.d(TAG,"huyanwei debug process_bar_value="+process_bar_value);                    
+                    
+                    if(process_bar_value >= 100)
                     	break;
-
-                    Log.d(TAG,"huyanwei debug process_bar_value="+process_bar_value);
                     
                     try {
                         Thread.sleep(500);
@@ -185,6 +197,9 @@ public class Notifycation extends Activity {
         
         btn_clear = (Button)findViewById(R.id.notify_button_clear);
         btn_clear.setOnClickListener(btn_OnClickListener);
+        
+        btn_update = (Button)findViewById(R.id.update_notify_remote_view);
+        btn_update.setOnClickListener(btn_OnClickListener);
         
         mNotificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
         
