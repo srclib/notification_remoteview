@@ -10,6 +10,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -17,6 +18,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.RemoteViews;
 import android.support.v4.app.NavUtils;
+
+import android.content.BroadcastReceiver;
 
 public class Notifycation extends Activity {
 
@@ -45,6 +48,32 @@ public class Notifycation extends Activity {
 	private int process_bar_value = 0 ;
 	
 	private boolean debug = false;
+	
+	public String ACTION_INC = "SRCLIB_INC";
+	public String ACTION_DEC = "SRCLIB_DEC";
+	public String ACTION_AUT = "SRCLIB_AUT";
+		
+    private final BroadcastReceiver mNotificationReceiver = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+                String action = intent.getAction();
+                if (action.equals(ACTION_INC))
+                {
+                	update_remote_view_progress_bar(true,5);
+                    Log.d(TAG,"huyanwei debug receive Broadcast ACTION_INC.");
+                }
+                else if (action.equals(ACTION_DEC))
+                {
+                	update_remote_view_progress_bar(false,5);
+                	Log.d(TAG,"huyanwei debug receive Broadcast ACTION_DEC.");
+                }
+                else if (action.equals(ACTION_AUT))
+                {
+                	Log.d(TAG,"huyanwei debug receive Broadcast ACTION_AUT.");
+                	update_remote_view();
+                }	
+        }
+    };
+	
 		
 	private View.OnClickListener btn_OnClickListener = new View.OnClickListener() 
 	{
@@ -52,8 +81,7 @@ public class Notifycation extends Activity {
 			switch(arg0.getId())
 			{
 				case R.id.notify_button_gen:
-					generate_notification();
-					update_remote_view();
+					generate_notification();					
 					break;
 				case R.id.notify_button_clear:
 					clear_notification();
@@ -73,6 +101,12 @@ public class Notifycation extends Activity {
             // TODO Auto-generated method stub        
         	if(debug) 
         		Log.d(TAG,"huyanwei receive msg.arg1="+msg.arg1);
+        	
+        	// min/max value check .
+            if ((msg.arg1 < 0) || (msg.arg1 > 100)) {
+            	return ;
+            }
+            
         	mNotification.contentView.setProgressBar(R.id.progressBar1, 100, msg.arg1,
                     false);
         	mNotificationManager.notify(NOTIFY_ID, mNotification);
@@ -98,7 +132,7 @@ public class Notifycation extends Activity {
         mClearIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);     
         //主要是设置清除所有通知时显示内容的类		
         PendingIntent mPendingClearIntent = PendingIntent.getActivity(this, 0, mClearIntent, 0);
-     
+        
 		mNotification = new Notification();
 		
 		//设置通知在状态栏显示的图标
@@ -113,6 +147,8 @@ public class Notifycation extends Activity {
 								| Notification.DEFAULT_VIBRATE 			//通知时震动
 								| Notification.DEFAULT_LIGHTS;          //通知时亮屏
 		*/
+		
+		//mNotification.vibrate = new long[] { 0, 700, 500, 1000 };		
 		
 		//mNotification.flags		|= 	Notification.FLAG_ONLY_ALERT_ONCE;		
 		//mNotification.flags 	|= 	Notification.FLAG_INSISTENT ;    	//通知的音乐效果一直播放
@@ -130,10 +166,40 @@ public class Notifycation extends Activity {
 		
         if(m_allow_remoteview)
         {
+        	Intent mRemoteIntent;
+        	PendingIntent mRemoteViewIntent;
+        	
         	mRemoteViews = new RemoteViews(this.getApplication().getPackageName(), R.layout.notification_remote_views);
         	mRemoteViews.setProgressBar(R.id.progressBar1, 100, 0, false);
+
+        	/*
+        	mRemoteIntent = new Intent(Intent.ACTION_VIEW);
+        	mRemoteIntent.setData(Uri.parse("http://www.baidu.com"));
+        	mRemoteIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        	mRemoteViewIntent = PendingIntent.getActivity(this, 0, mRemoteIntent, 0);
+        	*/
+        	mRemoteIntent = new Intent(ACTION_INC);
+        	mRemoteViewIntent = PendingIntent.getBroadcast(this, 0, mRemoteIntent, 0);
+        	mRemoteViews.setOnClickPendingIntent(R.id.button1, mRemoteViewIntent);
+
+        	mRemoteIntent = new Intent(ACTION_AUT);
+        	mRemoteViewIntent = PendingIntent.getBroadcast(this, 0, mRemoteIntent, 0);
+        	mRemoteViews.setOnClickPendingIntent(R.id.button2, mRemoteViewIntent);
+        	
+        	/*
+        	mRemoteIntent = new Intent(Intent.ACTION_VIEW);
+        	mRemoteIntent.setData(Uri.parse("http://www.google.com"));
+        	mRemoteIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        	mRemoteViewIntent = PendingIntent.getActivity(this, 0, mRemoteIntent, 0);
+        	*/
+        	mRemoteIntent = new Intent(ACTION_DEC);
+        	mRemoteViewIntent = PendingIntent.getBroadcast(this, 0, mRemoteIntent, 0);
+        	mRemoteViews.setOnClickPendingIntent(R.id.button3, mRemoteViewIntent);
+        	
         	mNotification.contentView = mRemoteViews;        	
         	mNotification.contentIntent = mPendingClickIntent;
+        	
+        	//mNotification.contentViewTouchHandle = 1 ;        	
         }
         else
         {
@@ -153,6 +219,50 @@ public class Notifycation extends Activity {
 	}
 	
 	
+	class remote_view_runable implements Runnable
+	{
+		boolean inc ;
+		int     delta ;
+		
+		remote_view_runable(boolean inc_value , int delta_value)
+		{
+			inc = inc_value;
+			delta = delta_value ;
+		}
+		
+		public void run()
+		{
+			// TODO Auto-generated method stub
+			if(inc)
+    		{
+    			process_bar_value -= delta;
+    		}
+    		else
+    		{
+    			process_bar_value += delta;
+    		}
+            Message msg = mHandler.obtainMessage();
+            msg.arg1 = process_bar_value;
+            msg.sendToTarget();
+            
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+		}
+	}
+	
+    private void update_remote_view_progress_bar(boolean inc , int delta)
+    {
+		// valid object check.
+		if (mNotification == null )
+			return ;		
+		Thread mThread = new Thread(new remote_view_runable(inc,delta));		
+		mThread.start();
+    }
+	
 	private void update_remote_view()
 	{
 		// valid object check.
@@ -163,7 +273,7 @@ public class Notifycation extends Activity {
             public void run() {   
             	process_bar_value = 0 ;
                 while (true) {
-                	process_bar_value += 1;
+                	process_bar_value += 5;
                     Message msg = mHandler.obtainMessage();
                     msg.arg1 = process_bar_value;
                     msg.sendToTarget();
@@ -202,6 +312,13 @@ public class Notifycation extends Activity {
         btn_update.setOnClickListener(btn_OnClickListener);
         
         mNotificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+        
+        // broadcast 
+        IntentFilter mNotificationReceiverFilter = new IntentFilter();
+        mNotificationReceiverFilter.addAction(ACTION_INC);
+        mNotificationReceiverFilter.addAction(ACTION_DEC);
+        mNotificationReceiverFilter.addAction(ACTION_AUT);
+        this.registerReceiver(mNotificationReceiver,mNotificationReceiverFilter);
         
     }
 
