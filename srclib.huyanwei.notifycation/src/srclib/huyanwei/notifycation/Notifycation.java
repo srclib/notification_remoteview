@@ -103,8 +103,13 @@ public class Notifycation extends Activity {
         		Log.d(TAG,"huyanwei receive msg.arg1="+msg.arg1);
         	
         	// min/max value check .
-            if ((msg.arg1 < 0) || (msg.arg1 > 100)) {
-            	return ;
+            if ((msg.arg1 < 0)) 
+            {
+            	process_bar_value = 0 ;
+            }
+            if((msg.arg1 > 100))
+            {
+            	process_bar_value = 100 ;
             }
             
         	mNotification.contentView.setProgressBar(R.id.progressBar1, 100, msg.arg1,
@@ -178,7 +183,7 @@ public class Notifycation extends Activity {
         	mRemoteIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         	mRemoteViewIntent = PendingIntent.getActivity(this, 0, mRemoteIntent, 0);
         	*/
-        	mRemoteIntent = new Intent(ACTION_INC);
+        	mRemoteIntent = new Intent(ACTION_DEC);
         	mRemoteViewIntent = PendingIntent.getBroadcast(this, 0, mRemoteIntent, 0);
         	mRemoteViews.setOnClickPendingIntent(R.id.button1, mRemoteViewIntent);
 
@@ -192,7 +197,7 @@ public class Notifycation extends Activity {
         	mRemoteIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         	mRemoteViewIntent = PendingIntent.getActivity(this, 0, mRemoteIntent, 0);
         	*/
-        	mRemoteIntent = new Intent(ACTION_DEC);
+        	mRemoteIntent = new Intent(ACTION_INC);
         	mRemoteViewIntent = PendingIntent.getBroadcast(this, 0, mRemoteIntent, 0);
         	mRemoteViews.setOnClickPendingIntent(R.id.button3, mRemoteViewIntent);
         	
@@ -235,11 +240,11 @@ public class Notifycation extends Activity {
 			// TODO Auto-generated method stub
 			if(inc)
     		{
-    			process_bar_value -= delta;
+    			process_bar_value += delta;
     		}
     		else
     		{
-    			process_bar_value += delta;
+    			process_bar_value -= delta;
     		}
             Message msg = mHandler.obtainMessage();
             msg.arg1 = process_bar_value;
@@ -355,13 +360,14 @@ public class Notifycation extends Activity {
 	@Override
 	protected void onStop() {
 		// TODO Auto-generated method stub
+		clear_notification(); // 清楚所有的通知.
 		super.onStop();
 	}
 
 	@Override
 	protected void onDestroy() {
-		// TODO Auto-generated method stub
-		clear_notification(); // 清楚所有的通知.		
+		// TODO Auto-generated method stub		
+		this.unregisterReceiver(mNotificationReceiver);
 		super.onDestroy();
 	}
 
